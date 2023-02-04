@@ -18,10 +18,40 @@ import { useState, useEffect } from 'react';
 function App() {
   const rows = [];
   const [data, setData] = useState([]);
-  useEffect(() => {
+  const [fullUrl, setFullUrl] = useState('');
+
+  const getData = () => {
     axios.get(`${process.env.REACT_APP_API_URL}/urls`).then((res) => {
       setData(res.data.data);
     });
+  };
+
+  const createRow = async (row) => {
+    await axios.post(`${process.env.REACT_APP_API_URL}/urls`, {
+      fullUrl
+    })
+      .then((res) => {
+        getData();
+        setFullUrl('');
+      });
+  };
+
+  const removeRow = async (row) => {
+    if (await confirm('Are you sure to remove ?')) {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/urls/delete/${row.shortUrl}`)
+        .then((res) => {
+          getData();
+        });
+    }
+  };
+
+  const goToUrl = async (row) => {
+    await window.open(`${process.env.REACT_APP_API_URL}/short-url/${row.shortUrl}`, '_blank');
+    getData();
+  };
+
+  useEffect(() => {
+    getData();
   }, []);
   return (
     <div className="App">
@@ -34,8 +64,10 @@ function App() {
           variant="standard"
           fullWidth
           margin="normal"
+          value={fullUrl}
+          onChange={(e) => setFullUrl(e.target.value)}
         />
-        <Button fullWidth variant="contained" color="success">Shorten Url</Button>
+        <Button fullWidth variant="contained" color="success" onClick={() => createRow()}>Shorten Url</Button>
         <TableContainer component={Paper} style={{ marginTop: '20px' }}>
           <Table sx={{ minWidth: 650 }} aria-label="simple table">
             <TableHead>
@@ -43,6 +75,7 @@ function App() {
                 <TableCell align="center">FullUrl</TableCell>
                 <TableCell align="center">ShortUrl</TableCell>
                 <TableCell align="center">Clicks</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -55,10 +88,13 @@ function App() {
                     <a target="_blank" href={row.fullUrl} rel="noreferrer">{row.fullUrl}</a>
                   </TableCell>
                   <TableCell align="center" component="th" scope="row">
-                    <a target="_blank" href={row.shortUrl} rel="noreferrer">{row.shortUrl}</a>
+                    <a target="_blank" href="#" onClick={() => goToUrl(row)} rel="noreferrer">{row.shortUrl}</a>
                   </TableCell>
                   <TableCell align="center" component="th" scope="row">
                     {row.clicks}
+                  </TableCell>
+                  <TableCell align="center" component="th" scope="row">
+                    <Button fullWidth size="small" variant="contained" color="error" onClick={() => removeRow(row)}>Delete</Button>
                   </TableCell>
                 </TableRow>
               ))}
